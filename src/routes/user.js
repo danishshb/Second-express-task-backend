@@ -32,7 +32,7 @@ router.delete(
   userController.deleteAttachment
   );
 router.post(
-  '/rename',
+  '/rename/:fileId',
   protect,
   userController.renameFile
   );

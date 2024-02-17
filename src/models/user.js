@@ -1,15 +1,5 @@
 const mongoose = require('mongoose');
 
-const folderSchema = new mongoose.Schema({
-    name: {
-        type: String, 
-        required: false 
-    },
-    filename: { type: String },
-    filePath: { type: String },
-    filesize: { type: Number },
-  });
-
 const attachmentSchema = new mongoose.Schema({
     filename: String,
     filePath: String,
@@ -37,7 +27,6 @@ const userSchema = new mongoose.Schema({
     },
     profileImage: attachmentSchema,
     attachments:[attachmentSchema],
-    folders: [folderSchema],
 });
 
 module.exports = mongoose.model('User', userSchema);

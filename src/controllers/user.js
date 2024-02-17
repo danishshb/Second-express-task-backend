@@ -347,7 +347,8 @@ exports.deleteAttachment = async (req, res) => {
 exports.renameFile = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { oldFilename, newFilename } = req.body;
+    const { newFilename } = req.body;
+    const fileId = req.params.fileId;
 
     const user = await User.findById(userId);
 
@@ -355,21 +356,18 @@ exports.renameFile = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const oldFilePath = path.join(__dirname, `../data/attachments`, oldFilename);
-    const newFilePath = path.join(__dirname, `../data/attachments`, newFilename);
+    const file = user.attachments.find(attachment => attachment._id.toString() === fileId);
 
-    if (!fs.existsSync(oldFilePath)) {
-      return res.status(404).json({ message: 'Old file not found' });
+    if (!file) {
+      return res.status(404).json({ message: 'File not found' });
     }
 
-    fs.renameSync(oldFilePath, newFilePath);
-
+    file.filename = newFilename;
     await user.save();
 
     return res.status(200).json({ message: 'File renamed successfully' });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: 'Something went wrong!' });
+    return res.status(500).json({ message: 'Internal Server Error' });
   }
 };
-
