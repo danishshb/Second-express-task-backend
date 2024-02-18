@@ -371,3 +371,39 @@ exports.renameFile = async (req, res) => {
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 };
+
+exports.createFolder = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { folderName } = req.body; 
+
+    // User ko dhoondhein ya create karein (agar nahi hai)
+    let user = await User.findById(userId);
+    if (!user) {
+      user = await User.create({ _id: userId, folders: [] });
+    }
+
+    // Folder name kaunsa unique hai, yeh check karein
+    const existingFolder = user.folders.find(folder => folder.name === folderName);
+    if (existingFolder) {
+      return res.status(400).json({ message: 'Folder name already exists' });
+    }
+
+    // Naya folder create karein
+    const newFolder = {
+      name: folderName,
+      files: [] // aur koi properties agar zaroori hain
+    };
+
+    // User ke folders array mein naya folder add karein
+    user.folders.push(newFolder);
+
+    // User ko save karein, jisse changes database mein reflect ho
+    await user.save();
+
+    return res.status(201).json({ message: 'Folder created successfully', folder: newFolder });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+};

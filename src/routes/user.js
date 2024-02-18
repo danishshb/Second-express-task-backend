@@ -36,9 +36,9 @@ router.post(
   protect,
   userController.renameFile
   );
-// router.post(
-//   '/create-folder', 
-//   protect,
-//   userController.createFolder);
+router.post(
+  '/folders/create', 
+  protect,
+  userController.createFolder);
 
 module.exports = router
