@@ -40,5 +40,8 @@ router.post(
   '/folders/create', 
   protect,
   userController.createFolder);
+  router.post(
+    '/forgot-password', 
+    userController.forgetPassword);
 
 module.exports = router

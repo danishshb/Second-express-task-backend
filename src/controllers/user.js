@@ -4,6 +4,9 @@ const jwt = require("jsonwebtoken");
 const { SECRET_KEY } = require("../config/env");
 const path = require("path");
 const fs = require("fs");
+const { MJ_APIKEY_PUBLIC, MJ_APIKEY_PRIVATE } = require("../config/env");
+const Mailjet = require("node-mailjet");
+const mailjet = Mailjet.apiConnect(MJ_APIKEY_PUBLIC, MJ_APIKEY_PRIVATE);
 
 exports.register = async (req, res) => {
   const { firstName, lastName, email, password } = req.body;
@@ -78,6 +81,51 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 };
+
+exports.forgetPassword = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email })
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+  const resetToken = jwt.sign({ userId: user._id, email: user.email }, SECRET_KEY, { expiresIn: '1h' });
+
+  const request = mailjet.post("send", { version: "v3.1" }).request({
+    Messages: [
+      {
+        From: {
+          Email: "danishkaleem595@gmail.com",
+          Name: "Consultants",
+        },
+        To: [ 
+          {
+            Email: email,
+            Name: `${user.firstName} ${user.lastName}`,
+          },
+        ],
+        Subject: `${user.firstName}, Rset Your Password for AAMAX`,
+        TextPart: `Asslamu alaikum`,
+        HTMLPart: `<h1>Reset Your Password</h1> <h3>Hi Danish</h3><p>We received a request to your password.</p><br>
+        <p>To set up a new password to your account, click"Rest Your Password" below.</p>
+        <a href="/signup"><Button style="background-color:#F6B915;color:white;border:none;height:50px;
+        width:100px;font-size:20px;">Sign Up</Button></a>`,
+      },
+    ],
+  });
+  
+  request
+
+  res.status(200).json({ message: "Password reset link sent successfully" });
+} catch (error) {
+  console.error(error);
+  res.status(500).json({ message: "Something went wrong" });
+}
+};
+
 exports.getUserInfo = async (req, res) => {
   try {
     const userId = req.user._id;
