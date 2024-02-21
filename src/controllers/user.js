@@ -81,7 +81,6 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: "Something went wrong" });
   }
 };
-
 exports.forgetPassword = async (req, res) => {
   const { email } = req.body;
 
@@ -109,22 +108,69 @@ exports.forgetPassword = async (req, res) => {
         ],
         Subject: `${user.firstName}, Rset Your Password for AAMAX`,
         TextPart: `Asslamu alaikum`,
-        HTMLPart: `<h1>Reset Your Password</h1> <h3>Hi Danish</h3><p>We received a request to your password.</p><br>
+        HTMLPart: `<h1>Reset Your Password</h1> <h3>Hi ${user.firstName},</h3><p>We received a request to your password.</p><br>
         <p>To set up a new password to your account, click"Rest Your Password" below.</p>
-        <a href="/signup"><Button style="background-color:#F6B915;color:white;border:none;height:50px;
-        width:100px;font-size:20px;">Sign Up</Button></a>`,
+        <a href="http://localhost:3000/resetpassword"><Button style="background-color:#F6B915;color:white;border:none;height:50px;
+        width:200px;font-size:18px;">Reset Your Password</Button></a>`,
       },
     ],
   });
   
   request
-
   res.status(200).json({ message: "Password reset link sent successfully" });
 } catch (error) {
   console.error(error);
   res.status(500).json({ message: "Something went wrong" });
 }
 };
+
+exports.updatePassword = async (req, res) => {
+    
+    const { id, token } = req.params
+    const { newPassword, confirmPassword } = req.body;
+  
+    try {
+
+      if (confirmPassword !== newPassword)
+      return res
+        .status(400)
+        .json({ message: "Passwords do not match۔" });
+
+      const decoded = jwt.verify(token, SECRET_KEY);
+  
+      const user = await User.findById(
+        decoded.user._id);
+  
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const hashedPassword = await bcrypt.hash(confirmPassword, 10);
+
+      const newUser = new User({
+        _id: decoded.user._id,
+        password: hashedPassword,
+      });
+  
+      user.password = newPassword;
+      await newUser.save();
+
+      const resetToken = jwt.sign(
+        { userId: user._id, email: user.email },
+        SECRET_KEY,
+        { expiresIn: "1h" }
+      );
+        
+      res.status(200).json({
+        message: "Password updated successfully",
+        token: resetToken,
+        userId: user._id,
+        });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Something went wrong" });
+    }
+  };
 
 exports.getUserInfo = async (req, res) => {
   try {
@@ -425,28 +471,23 @@ exports.createFolder = async (req, res) => {
     const userId = req.user._id;
     const { folderName } = req.body; 
 
-    // User ko dhoondhein ya create karein (agar nahi hai)
     let user = await User.findById(userId);
     if (!user) {
       user = await User.create({ _id: userId, folders: [] });
     }
 
-    // Folder name kaunsa unique hai, yeh check karein
     const existingFolder = user.folders.find(folder => folder.name === folderName);
     if (existingFolder) {
       return res.status(400).json({ message: 'Folder name already exists' });
     }
 
-    // Naya folder create karein
     const newFolder = {
       name: folderName,
-      files: [] // aur koi properties agar zaroori hain
+      files: [] 
     };
 
-    // User ke folders array mein naya folder add karein
     user.folders.push(newFolder);
 
-    // User ko save karein, jisse changes database mein reflect ho
     await user.save();
 
     return res.status(201).json({ message: 'Folder created successfully', folder: newFolder });

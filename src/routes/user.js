@@ -40,8 +40,11 @@ router.post(
   '/folders/create', 
   protect,
   userController.createFolder);
-  router.post(
-    '/forgot-password', 
-    userController.forgetPassword);
+router.post(
+  '/forgot-password', 
+  userController.forgetPassword);
+router.post(
+  '/reset-password',
+  userController.updatePassword);
 
 module.exports = router
