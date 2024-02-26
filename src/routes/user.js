@@ -40,6 +40,14 @@ router.post(
   '/folders/create', 
   protect,
   userController.createFolder);
+router.put(
+  '/folders/rename/:fileId',
+  protect,
+  userController.renameFolder);
+router.delete(
+  '/folders/delete/:name',
+  protect, 
+  userController.deleteFolder);
 router.post(
   '/forgot-password', 
   userController.forgetPassword);

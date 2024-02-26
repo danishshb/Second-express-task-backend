@@ -166,10 +166,10 @@ exports.updatePassword = async (req, res) => {
         token: resetToken,
         userId: user._id,
         });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Something went wrong" });
-    }
+      } catch (error) {
+        console.error(error);  // Log the full error for debugging
+        res.status(500).json({ message: "Something went wrong" });
+      }
   };
 
 exports.getUserInfo = async (req, res) => {
@@ -302,43 +302,6 @@ exports.attachments = async (req, res) => {
 
     const userAttachments = user.attachments;
 
-    // Commented out the email-sending code
-      /*
-      const templatePath = path.join(__dirname, "../utils/fileUploadSuccessFully.html");
-      const welcomeEmailHTML = fs.readFileSync(templatePath, "utf-8");
-  
-      const dynamicHTML = welcomeEmailHTML
-        .replace(/{{USERNAME}}/g, `${user.firstName} ${user.lastName}`)
-        .replace(/{{filename}}/g, `${user.attachments.filename}`);
-  
-      const request = mailjet.post("send", { version: "v3.1" }).request({
-        Messages: [
-          {
-            From: {
-              Email: "mailto:mshrafatsubhan124@gmail.com",
-              Name: "AAMAX",
-            },
-            To: [
-              {
-                Email: user.email,
-                Name: `${user.firstName} ${user.lastName}`,
-              },
-            ],
-            Subject: `${user.firstName} you upload file successFully`,
-            TextPart: `Assalamu alaikum`,
-            HTMLPart: dynamicHTML,
-            Attachments: userAttachments.map(attachment => ({
-              ContentType: 'application/octet-stream',
-              Filename: attachment.filename,
-              Base64Content: (fs.readFileSync(attachment.filePath)).toString('base64'),
-            })),
-          },
-        ],
-      });
-  
-      await request;
-      */
-
     return res.status(201).json(userAttachments);
   } catch (error) {
     console.error(error);
@@ -437,7 +400,6 @@ exports.deleteAttachment = async (req, res) => {
     return res.status(500).json({ error: 'Something went wrong!' });
   }
 };
-
 exports.renameFile = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -465,7 +427,6 @@ exports.renameFile = async (req, res) => {
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 };
-
 exports.createFolder = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -496,3 +457,65 @@ exports.createFolder = async (req, res) => {
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 };
+exports.renameFolder = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const fileId = req.params.fileId;
+    const { newFolderName } = req.body;
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(403).json({ error: "Insufficient permissions to rename the folder." });
+    }
+    
+    const file = user.folders.find(folder => folder._id.toString() === fileId);
+
+    if (!file) {
+      return res.status(404).json({ error: "Folder not found" });
+    }
+
+    file.name = newFolderName;
+    await user.save();
+
+    res.status(200).json({ message: "Folder renamed successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something Went Wrong!" });
+  }
+};
+exports.deleteFolder = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { name } = req.params;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const updatedFolders = user.folders.filter(
+      (folder) => folder.name !== name
+    );
+
+    if (user.folders.length === updatedFolders.length) {
+      return res.status(404).json({ message: 'Folder not found' });
+    }
+
+    const filePath = path.join(__dirname, `../data/folders`, name);
+
+    if (fs.existsSync(filePath)) {
+      await unlinkAsync(filePath);
+      // console.log('Folder deleted successfully');
+    } else {
+      // console.log('Folder not found');
+    }
+
+    user.folders = updatedFolders;
+    await user.save();
+    return res.status(200).json({ message: 'Folder deleted successfully' });
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
