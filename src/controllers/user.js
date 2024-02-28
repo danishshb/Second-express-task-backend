@@ -430,7 +430,7 @@ exports.renameFile = async (req, res) => {
 exports.createFolder = async (req, res) => {
   try {
     const userId = req.user._id;
-    const { folderName } = req.body; 
+    const folderName = String(req.body.folderName);
 
     let user = await User.findById(userId);
     if (!user) {
